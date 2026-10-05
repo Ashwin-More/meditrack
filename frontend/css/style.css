@@ -1,0 +1,733 @@
+/* =====================================================================
+   MediTrack — "Midnight Health-Tech" theme
+   Deep navy base + electric violet brand + medical cyan accent.
+
+   Proportions (kept deliberately restrained so it reads premium, not "gaming"):
+     ~80%  dark navy / neutral surfaces   (background, sidebar, cards)
+     ~15%  violet                          (primary buttons, active nav, links)
+     ~5%   cyan / blue                     (health highlights, secondary data)
+
+   Semantic colors are reserved for clinical meaning only:
+     green = healthy / completed / active     amber = pending / warning
+     red   = critical / error                 sky   = scheduled / information
+
+   The signature gradient (violet -> blue -> cyan) is used sparingly: logo mark,
+   the main call-to-action, the auth hero and small decorative glows.
+   ===================================================================== */
+
+/* =====================================================================
+   MediTrack — strict two-color theme system.
+   Every surface, button, and sidebar in a given mode is built from exactly
+   two swatches: an accent color and a background color. Everything else
+   (borders, muted text, hover/elevated states) is a derived shade of one
+   of those two — never a third arbitrary hue — via color-mix().
+
+     light (default) — accent #0288D1 (deep, saturated ocean blue)
+                        background #FFFFFF (white)
+     dark             — accent #001832
+                        background #000000 (black)
+
+   Toggled via [data-theme] on <html> and persisted in localStorage
+   (see js/theme.js). Applies everywhere, including the login/auth screens.
+
+   Semantic status colors (success/warning/danger/info) are a separate,
+   deliberately small set reserved for clinical/status meaning only
+   (e.g. Approved vs Pending vs Disabled) — they are not brand colors and
+   are not used for buttons, sidebars, links, or any other "brand" surface.
+   ===================================================================== */
+:root,
+:root[data-theme="light"] {
+
+  /* ===== Main Background ===== */
+  --bg:            #FFFFFF;   /* Pure white page background */
+  --primary:       #2457D6;   /* Main royal blue */
+  --sidebar:       #FFFFFF;   /* White sidebar */
+  --card:          #FFFFFF;   /* White cards */
+
+  /* ===== Elevated Areas ===== */
+  --bg-elev:       #F7F9FD;   /* Very subtle blue-gray */
+  --primary-hover: #1746B8;   /* Darker blue hover */
+  --primary-soft:  #EAF0FF;   /* Soft blue */
+
+  /* ===== Text ===== */
+  --text:          #18213D;   /* Deep navy */
+  --text-muted:    #667085;   /* Muted blue-gray */
+
+  /* ===== Borders ===== */
+  --border:        #E6EAF2;
+  --border-strong: #CBD5E1;
+
+  /* ===== Sidebar ===== */
+  --sidebar-text:       #18213D;
+  --sidebar-text-muted: #667085;
+  --sidebar-active-bg:  #2457D6;
+  --sidebar-border:     #E6EAF2;
+
+  /* ===== Status ===== */
+  --success: #16A34A;
+  --warning: #D97706;
+  --danger:  #DC2626;
+  --info:    #0284C7;
+
+  /* ===== Healthcare Accents ===== */
+  --cyan:   #18C6C8;
+  --violet: #8B7CF6;
+  --blue:   #2457D6;
+
+  /* ===== Gradient ===== */
+  --gradient: linear-gradient(
+    135deg,
+    #2457D6 0%,
+    #18C6C8 100%
+  );
+
+  color-scheme: light;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] {
+  --bg:            #000000;   /* main background — strictly black */
+  --primary:       #001832;   /* strictly this — buttons, sidebar, links, focus */
+  --sidebar:       var(--primary);
+  --card:          #000000;
+  --bg-elev:       color-mix(in srgb, white 6%, black);
+  --primary-hover: color-mix(in srgb, var(--primary) 70%, white);
+  --primary-soft:  color-mix(in srgb, var(--primary) 42%, white);  /* readable link/active-text tint on black */
+  --text:          #FFFFFF;
+  --text-muted:    color-mix(in srgb, white 55%, black);
+  --border:        color-mix(in srgb, white 14%, black);
+  --border-strong: color-mix(in srgb, white 26%, black);
+
+  --sidebar-text:        #FFFFFF;
+  --sidebar-text-muted:  rgba(255, 255, 255, 0.72);
+  --sidebar-active-bg:   rgba(255, 255, 255, 0.14);
+  --sidebar-border:      rgba(255, 255, 255, 0.14);
+
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --danger:  #EF4444;
+  --info:    #38BDF8;
+
+  --gradient: var(--primary);
+  color-scheme: dark;
+}
+
+:root {
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+a { color: var(--primary-soft); text-decoration: none; }
+a:hover { color: var(--primary); text-decoration: underline; }
+
+.hidden { display: none !important; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------------------------------------------------------------------
+   App shell
+   --------------------------------------------------------------------- */
+.app-shell { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: 248px;
+  flex-shrink: 0;
+  background: var(--sidebar);
+  border-right: 1px solid var(--sidebar-border);
+  display: flex;
+  flex-direction: column;
+  padding: 20px 14px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.brand { display: flex; align-items: center; gap: 10px; padding: 6px 8px 24px 8px; }
+
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--sidebar-active-bg);
+  color: var(--sidebar-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  border: 1px solid var(--sidebar-border);
+}
+
+.brand-name { font-weight: 700; font-size: 17px; letter-spacing: 0.3px; }
+.brand-name .b-medi,
+.brand-name .b-track { color: var(--sidebar-text); }
+
+.nav { display: flex; flex-direction: column; gap: 3px; flex: 1; }
+
+.nav a {
+  position: relative;
+  color: var(--sidebar-text-muted);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.nav a:hover { background: var(--sidebar-active-bg); color: var(--sidebar-text); text-decoration: none; }
+.nav a.active { background: var(--sidebar-active-bg); color: var(--sidebar-text); font-weight: 600; }
+.nav a.active::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 20%; bottom: 20%;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--sidebar-text);
+}
+
+.sidebar-footer {
+  border-top: 1px solid var(--sidebar-border);
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--sidebar-border);
+  background: var(--sidebar-active-bg);
+  color: var(--sidebar-text-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.theme-toggle:hover { color: var(--sidebar-text); border-color: var(--sidebar-text-muted); }
+.theme-toggle .icon { font-size: 15px; line-height: 1; }
+
+.user-chip { display: flex; align-items: center; gap: 10px; }
+
+.user-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--sidebar-active-bg);
+  color: var(--sidebar-text);
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid var(--sidebar-border);
+}
+.user-name { font-size: 13px; font-weight: 600; color: var(--sidebar-text); }
+.user-role { font-size: 12px; color: var(--sidebar-text-muted); text-transform: capitalize; }
+
+.content { flex: 1; min-width: 0; background: var(--bg); padding: 0 32px 32px 32px; }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 0;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.topbar-date { color: var(--text-muted); font-size: 13.5px; }
+.topbar-right { display: flex; align-items: center; gap: 14px; }
+
+.bell {
+  position: relative;
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+.bell:hover { border-color: color-mix(in srgb, var(--primary) 50%, transparent); color: var(--text); text-decoration: none; }
+.bell-count {
+  position: absolute;
+  top: -4px; right: -4px;
+  min-width: 18px; height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.role-pill {
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  color: var(--primary-soft);
+  font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+}
+
+.view-root { max-width: 1100px; margin: 24px auto 0 auto; }
+
+/* ---------------------------------------------------------------------
+   Cards
+   --------------------------------------------------------------------- */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+  transition: border-color 0.2s ease;
+}
+.card:hover { border-color: color-mix(in srgb, var(--primary) 50%, transparent); }
+
+.card-title { font-size: 16px; font-weight: 600; margin: 0 0 4px 0; }
+.card-subtitle { color: var(--text-muted); font-size: 13px; margin: 0 0 16px 0; }
+
+.page-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+.page-title { font-size: 24px; font-weight: 700; margin: 0; }
+.page-subtitle { color: var(--text-muted); font-size: 14px; margin: 4px 0 0 0; }
+
+/* Hero card (dashboard greeting) — one of the few places the gradient is used */
+.hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  padding: 26px 28px;
+  margin-bottom: 20px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--primary);
+}
+.hero > * { position: relative; }
+.hero h1 { margin: 0 0 4px 0; font-size: 26px; }
+.hero p { margin: 0; color: var(--text-muted); }
+
+/* ---------------------------------------------------------------------
+   Buttons
+   --------------------------------------------------------------------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 9px 16px;
+  font-size: 13.5px; font-weight: 600; font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.btn:hover { text-decoration: none; }
+
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-hover); color: #fff; }
+.btn-primary:disabled, .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Special CTA (e.g. Book appointment) */
+.btn-cta { background: var(--primary); color: #fff; box-shadow: 0 6px 20px color-mix(in srgb, var(--primary) 35%, transparent); }
+.btn-cta:hover { filter: brightness(1.1); color: #fff; }
+
+.btn-secondary { background: transparent; color: var(--text); border-color: var(--border-strong); }
+.btn-secondary:hover { background: var(--bg-elev); color: var(--text); border-color: var(--primary); }
+
+.btn-ghost { background: transparent; color: var(--text-muted); border-color: var(--border); }
+.btn-ghost:hover { background: var(--bg-elev); color: var(--text); }
+
+.btn-danger { background: transparent; color: var(--danger); border-color: color-mix(in srgb, var(--danger) 55%, transparent); }
+.btn-danger:hover { background: color-mix(in srgb, var(--danger) 14%, transparent); }
+
+/* Buttons inside the sidebar sit on the solid accent-color fill, not the page background. */
+.sidebar-footer .btn { color: var(--sidebar-text); border-color: var(--sidebar-border); }
+.sidebar-footer .btn:hover { background: var(--sidebar-active-bg); color: var(--sidebar-text); }
+
+.btn-small { padding: 6px 11px; font-size: 12.5px; }
+.btn-full { width: 100%; }
+
+/* ---------------------------------------------------------------------
+   Forms
+   --------------------------------------------------------------------- */
+label {
+  display: block;
+  font-size: 12px; font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px; font-family: inherit;
+}
+input::placeholder, textarea::placeholder { color: var(--text-muted); opacity: 0.8; }
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+input:disabled, select:disabled { opacity: 0.55; }
+
+.field { margin-bottom: 14px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.field-row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+
+.form-error, .form-success, .alert {
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 13px;
+  margin-bottom: 14px;
+  border: 1px solid;
+}
+.form-error   { background: color-mix(in srgb, var(--danger) 10%, transparent);  border-color: color-mix(in srgb, var(--danger) 40%, transparent);  color: var(--danger); }
+.form-success { background: color-mix(in srgb, var(--success) 10%, transparent); border-color: color-mix(in srgb, var(--success) 40%, transparent); color: var(--success); }
+
+.form-hint { color: var(--text-muted); font-size: 12.5px; margin-top: 4px; }
+
+/* ---------------------------------------------------------------------
+   Tables / lists
+   --------------------------------------------------------------------- */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th {
+  text-align: left;
+  font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  padding: 10px;
+  white-space: nowrap;
+}
+td { padding: 12px 10px; border-bottom: 1px solid var(--border); font-size: 14px; }
+tr:last-child td { border-bottom: none; }
+tr.row-clickable:hover { background: color-mix(in srgb, var(--primary) 8%, transparent); cursor: pointer; }
+
+/* ---------------------------------------------------------------------
+   Badges — semantic status colors
+   --------------------------------------------------------------------- */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  border: 1px solid transparent;
+  vertical-align: middle;
+}
+.badge-success { background: rgba(34, 197, 94, 0.14);  color: var(--success); border-color: rgba(34, 197, 94, 0.3); }
+.badge-warning { background: rgba(245, 158, 11, 0.14); color: var(--warning); border-color: rgba(245, 158, 11, 0.3); }
+.badge-error   { background: rgba(239, 68, 68, 0.14);  color: var(--danger);  border-color: rgba(239, 68, 68, 0.3); }
+.badge-info    { background: rgba(56, 189, 248, 0.14); color: var(--info);    border-color: rgba(56, 189, 248, 0.3); }
+.badge-neutral { background: color-mix(in srgb, var(--primary) 16%, transparent); color: var(--primary-soft); border-color: color-mix(in srgb, var(--primary) 35%, transparent); }
+.badge-muted   { background: rgba(148, 163, 184, 0.14); color: var(--text-muted); border-color: rgba(148, 163, 184, 0.25); }
+
+.status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+
+/* Alert banners */
+.alert-warning {
+  background: color-mix(in srgb, var(--warning) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning) 40%, transparent);
+  color: var(--warning);
+  border-radius: var(--radius-md);
+  padding: 12px 16px; font-size: 13.5px; margin-bottom: 16px;
+}
+.alert-warning strong { display: block; margin-bottom: 4px; }
+.alert-warning a { color: var(--warning); text-decoration: underline; }
+
+.alert-success {
+  background: color-mix(in srgb, var(--success) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success) 40%, transparent);
+  color: var(--success);
+  border-radius: var(--radius-md);
+  padding: 12px 16px; font-size: 13.5px; margin-bottom: 16px;
+}
+
+.alert-info {
+  background: color-mix(in srgb, var(--info) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--info) 35%, transparent);
+  color: var(--info);
+  border-radius: var(--radius-md);
+  padding: 12px 16px; font-size: 13.5px; margin-bottom: 16px;
+}
+
+/* ---------------------------------------------------------------------
+   Auth screens — navy + violet/cyan radial glows behind a single card
+   --------------------------------------------------------------------- */
+.auth-screen {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  background: var(--bg);
+}
+
+.auth-card {
+  width: 100%; max-width: 420px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 34px 30px;
+}
+.auth-card.wide { max-width: 520px; }
+
+.auth-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; font-size: 18px; }
+.auth-logo .brand-mark { background: var(--primary); color: #fff; border-color: var(--primary); }
+.auth-logo .b-medi  { color: var(--text); font-weight: 700; }
+.auth-logo .b-track { color: var(--primary); font-weight: 700; }
+
+.auth-title { font-size: 21px; font-weight: 700; margin: 0 0 4px 0; }
+.auth-subtitle { color: var(--text-muted); font-size: 13.5px; margin: 0 0 22px 0; }
+.auth-switch { margin-top: 18px; text-align: center; font-size: 13.5px; color: var(--text-muted); }
+.auth-row { display: flex; justify-content: flex-end; margin: -6px 0 14px 0; font-size: 13px; }
+
+.demo-box {
+  margin-top: 20px;
+  border-top: 1px dashed var(--border-strong);
+  padding-top: 14px;
+  font-size: 12px; color: var(--text-muted);
+}
+.demo-box code { background: var(--bg-elev); color: var(--primary); padding: 1px 6px; border-radius: 4px; }
+
+.auth-status { text-align: center; padding: 8px 0; }
+.auth-status .big { font-size: 40px; margin-bottom: 8px; }
+
+/* ---------------------------------------------------------------------
+   Toast
+   --------------------------------------------------------------------- */
+.toast {
+  position: fixed; top: 18px; right: 18px;
+  background: var(--card);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  padding: 12px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  box-shadow: var(--shadow);
+  z-index: 100;
+}
+/* Light mode: white/tinted toasts (no dark boxes on a white page). Dark mode keeps its original colours. */
+.toast.error   { border-color: var(--danger);  background: #FEF2F2; color: #B91C1C; }
+.toast.success { border-color: var(--success); background: #F0FDF4; color: #15803D; }
+:root[data-theme="dark"] .toast.error   { background: #2A1620; color: #FCA5A5; }
+:root[data-theme="dark"] .toast.success { background: #12261F; color: #86EFAC; }
+
+/* ---------------------------------------------------------------------
+   Misc
+   --------------------------------------------------------------------- */
+.empty-state { text-align: center; color: var(--text-muted); padding: 36px 10px; font-size: 14px; }
+
+.section-title {
+  font-size: 12.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin: 22px 0 10px 0;
+}
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+.grid-main { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: start; }
+
+.stat-card {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  box-shadow: var(--shadow);
+  transition: border-color 0.2s ease;
+}
+.stat-card:hover { border-color: color-mix(in srgb, var(--primary) 50%, transparent); }
+.stat-value { font-size: 30px; font-weight: 700; color: var(--text); }
+.stat-label { font-size: 12.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.stat-dot { position: absolute; top: 18px; right: 18px; width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 10px currentColor; }
+.stat-dot.violet { background: var(--primary); color: var(--primary); }
+.stat-dot.blue   { background: var(--info);    color: var(--info); }
+.stat-dot.amber  { background: var(--warning); color: var(--warning); }
+.stat-dot.cyan   { background: var(--success); color: var(--success); }
+
+.divider { height: 1px; background: var(--border); margin: 18px 0; border: none; }
+
+.flex-between { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.flex-gap { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.item-list { list-style: none; padding: 0; margin: 0; }
+.item-list li { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13.5px; }
+.item-list li:last-child { border-bottom: none; }
+
+.pagination { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 18px; }
+
+/* Super Admin portal marker — strictly no third color: it's the same accent color
+   (#0288D1 light / #001832 dark) as everywhere else, distinguished only by a label
+   and a bolder border/ring, never by a different hue. */
+.portal-super-admin {
+  border: 2px solid var(--primary);
+}
+.portal-super-admin .auth-title::after {
+  content: "SUPER ADMIN PORTAL";
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--primary);
+  margin-top: 6px;
+}
+.portal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary) 45%, transparent);
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+.portal-select {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.portal-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, transform 0.1s ease;
+}
+.portal-option:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+.portal-option .portal-icon { font-size: 22px; }
+.portal-option .portal-text strong { display: block; font-size: 14.5px; }
+.portal-option .portal-text span { font-size: 12.5px; color: var(--text-muted); }
+
+.pill-link { color: var(--primary-soft); font-weight: 600; font-size: 13px; cursor: pointer; }
+.pill-link:hover { color: var(--primary); }
+
+.muted-text { color: var(--text-muted); font-size: 12.5px; }
+.text-muted { color: var(--text-muted); font-size: 13px; }
+
+/* Vitals */
+.vitals-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 8px; }
+.vital-tile {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+}
+.vital-tile .v-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+.vital-tile .v-value { font-size: 20px; font-weight: 700; }
+.vital-tile .v-unit  { font-size: 12px; color: var(--text-muted); font-weight: 400; margin-left: 3px; }
+.vital-tile.ok     .v-value { color: var(--success); }
+.vital-tile.warn   .v-value { color: var(--warning); }
+.vital-tile.danger .v-value { color: var(--danger); }
+.vital-tile.none   .v-value { color: var(--text-muted); }
+
+/* Bar chart (dashboard) */
+.bars { display: flex; align-items: flex-end; gap: 12px; height: 170px; padding-top: 10px; }
+.bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+.bar {
+  width: 100%; max-width: 46px; min-height: 4px;
+  border-radius: 8px 8px 2px 2px;
+  background: var(--primary);
+}
+.bar.today { background: color-mix(in srgb, var(--primary) 60%, white); }
+.bar-num { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+.bar-label { font-size: 11.5px; color: var(--text-muted); margin-top: 6px; }
+
+@media (max-width: 900px) {
+  .app-shell { flex-direction: column; }
+  .sidebar { width: 100%; height: auto; position: static; flex-direction: row; align-items: center; padding: 10px 14px; border-right: none; border-bottom: 1px solid var(--border); }
+  .brand { padding: 0 12px 0 0; }
+  .nav { flex-direction: row; overflow-x: auto; }
+  .nav a.active::before { display: none; }
+  .sidebar-footer { display: none; }
+  .content { padding: 0 16px 24px 16px; }
+  .field-row, .field-row-3, .grid-2, .grid-3, .grid-main, .vitals-grid { grid-template-columns: 1fr; }
+}
+
+/* Theme toggle shown on the login/register screens (the sidebar one is hidden there). */
+.auth-theme-slot { position: fixed; top: 16px; right: 16px; z-index: 50; width: 150px; }
+.auth-theme-slot .theme-toggle {
+  background: var(--bg); color: var(--text); border-color: var(--border-strong);
+}
+.auth-theme-slot .theme-toggle:hover { border-color: var(--primary); color: var(--text); }
+
+/* Demo-mode OTP display (only shown when the backend could not really deliver the code). */
+.demo-otp {
+  border: 1px dashed var(--primary);
+  background: var(--bg-elev);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  text-align: center;
+}
+.demo-otp-label { font-size: 12px; color: var(--text-muted); }
+.demo-otp-code { font-size: 26px; font-weight: 800; letter-spacing: 8px; color: var(--primary-soft); margin-top: 4px; }
+
+/* ---------------------------------------------------------------------
+   Light mode only — white sidebar. Everything here is scoped to
+   [data-theme="light"], so dark mode renders exactly as before.
+   --------------------------------------------------------------------- */
+:root[data-theme="light"] .sidebar { box-shadow: 1px 0 0 var(--sidebar-border); }
+:root[data-theme="light"] .brand-mark { background: var(--primary); color: #fff; border-color: var(--primary); }
+:root[data-theme="light"] .brand-name .b-medi { color: var(--sidebar-text); }
+:root[data-theme="light"] .brand-name .b-track { color: var(--primary); }
+:root[data-theme="light"] .nav a:hover { color: var(--primary-soft); }
+:root[data-theme="light"] .nav a.active { color: var(--primary-soft); }
+:root[data-theme="light"] .nav a.active::before { background: var(--primary); }
+:root[data-theme="light"] .user-avatar { background: var(--primary); color: #fff; border-color: var(--primary); }
+:root[data-theme="light"] .theme-toggle { background: var(--bg); }
+:root[data-theme="light"] .theme-toggle:hover { color: var(--primary-soft); border-color: var(--primary); }
+:root[data-theme="light"] .sidebar-footer .btn:hover { color: var(--primary-soft); }
+
+/* Readability (light mode only): --primary-soft is a pale tint meant for dark backgrounds,
+   which made these labels/links nearly invisible on white. Use the existing --primary instead.
+   No theme variables changed; dark mode is untouched. */
+:root[data-theme="light"] .auth-switch a,
+:root[data-theme="light"] .auth-row a,
+:root[data-theme="light"] .view-root a:not(.btn),
+:root[data-theme="light"] .role-pill,
+:root[data-theme="light"] .pill-link,
+:root[data-theme="light"] .badge-neutral,
+:root[data-theme="light"] .demo-otp-code { color: var(--primary); }
+:root[data-theme="light"] .auth-switch a:hover,
+:root[data-theme="light"] .auth-row a:hover,
+:root[data-theme="light"] .view-root a:not(.btn):hover { color: var(--primary-hover); }

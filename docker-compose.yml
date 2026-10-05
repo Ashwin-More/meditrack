@@ -1,0 +1,121 @@
+# All configuration comes from the `.env` file next to this file
+# (copy `.env.example` to `.env` first).
+services:
+
+  # =========================
+  # MySQL Database
+  # =========================
+  mysql:
+    image: mysql:8.0
+    container_name: meditrack-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-meditrack}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+    ports:
+      - "${MYSQL_HOST_PORT:-3307}:3306"
+    volumes:
+      - meditrack_mysql_data:/var/lib/mysql
+    networks:
+      - meditrack-network
+    healthcheck:
+      # $$ = evaluated inside the container, so it always matches the root password
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # =========================
+  # Spring Boot Backend
+  # =========================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: meditrack-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      # Database (inside the Docker network the DB is always mysql:3306)
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-meditrack}
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+
+      # Security
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env (32+ chars)}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+      JWT_REFRESH_EXPIRATION_MS: ${JWT_REFRESH_EXPIRATION_MS:-604800000}
+      LOGIN_RATE_LIMIT_MAX: ${LOGIN_RATE_LIMIT_MAX:-5}
+      LOGIN_RATE_LIMIT_WINDOW: ${LOGIN_RATE_LIMIT_WINDOW:-60}
+
+      # URLs / CORS
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5500}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5500,http://127.0.0.1:5500}
+
+      # Email (OTP delivery — verification / password reset / passwordless login)
+      MAIL_ENABLED: ${MAIL_ENABLED:-false}
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-no-reply@meditrack.local}
+
+      # SMS (OTP delivery for phone-number login/verification — no provider wired
+      # in by default; codes print to the backend console until you implement one)
+      SMS_ENABLED: ${SMS_ENABLED:-false}
+      SMS_FROM: ${SMS_FROM:-MEDITRACK}
+
+      # OTP demo mode: show undeliverable codes on screen (set false in production)
+      OTP_MAX_ATTEMPTS: ${OTP_MAX_ATTEMPTS:-5}
+      OTP_RESEND_COOLDOWN_SECONDS: ${OTP_RESEND_COOLDOWN_SECONDS:-30}
+
+      # Demo accounts: real inbox for their OTP emails + password recovery switch
+      SEED_EMAIL_BASE: ${SEED_EMAIL_BASE:-}
+      SEED_RESET_DEMO_PASSWORDS: ${SEED_RESET_DEMO_PASSWORDS:-false}
+
+      # OTP lifetimes
+      EMAIL_VERIFY_MINUTES: ${EMAIL_VERIFY_MINUTES:-10}
+      PASSWORD_RESET_MINUTES: ${PASSWORD_RESET_MINUTES:-30}
+      LOGIN_OTP_MINUTES: ${LOGIN_OTP_MINUTES:-5}
+
+      # Behaviour
+      UPLOAD_DIR: ${UPLOAD_DIR:-uploads/reports}
+      FLYWAY_ENABLED: ${FLYWAY_ENABLED:-true}
+      JPA_DDL_AUTO: ${JPA_DDL_AUTO:-validate}
+      SQL_LOG: ${SQL_LOG:-INFO}
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    volumes:
+      # Uploaded test reports (relative UPLOAD_DIR resolves against /app)
+      - meditrack_uploads:/app/uploads
+    networks:
+      - meditrack-network
+
+  # =========================
+  # Frontend
+  # =========================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: meditrack-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-5500}:80"
+    networks:
+      - meditrack-network
+
+volumes:
+  meditrack_mysql_data:
+  meditrack_uploads:
+
+networks:
+  meditrack-network:
+    driver: bridge

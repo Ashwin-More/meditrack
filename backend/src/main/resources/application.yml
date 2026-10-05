@@ -1,0 +1,98 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  config:
+    # Local runs (mvn spring-boot:run / start-backend.bat) now read the same .env as Docker.
+    # Real OS environment variables and Docker's env still win. Ignored if the file is absent.
+    import: "optional:file:../.env[.properties],optional:file:./.env[.properties]"
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:meditrack}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:WIN@20082003sS}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      # Flyway owns the schema now (see below), so Hibernate should only
+      # verify entities match it, never alter tables itself. Override with
+      # JPA_DDL_AUTO=update locally if you'd rather skip Flyway entirely.
+      ddl-auto: ${JPA_DDL_AUTO:validate}
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+        jdbc:
+          time_zone: UTC
+    # true = lazy relations can be read while building a response (Spring's default).
+    open-in-view: true
+
+  flyway:
+    enabled: ${FLYWAY_ENABLED:true}
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.starttls.required: true
+      mail.smtp.connectiontimeout: 10000
+      mail.smtp.timeout: 10000
+      mail.smtp.writetimeout: 10000
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:change-this-super-secret-key-meditrack-32chars-min}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}   # 24h (access token)
+    refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}   # 7 days (refresh token)
+  # Where the verification / reset links in emails point (the frontend origin).
+  frontend-url: ${FRONTEND_URL:http://localhost:5500}
+  mail:
+    # false = do not send; print the OTP code in this console instead (works with no SMTP account).
+    # true  = send real email through the spring.mail.* settings above.
+    enabled: ${MAIL_ENABLED:false}
+    from: ${MAIL_FROM:no-reply@meditrack.local}
+  sms:
+    # false = do not send; print the OTP code in this console instead (works with no SMS provider).
+    # true  = send real SMS — implement the provider call in SmsServiceImpl first.
+    enabled: ${SMS_ENABLED:false}
+    from: ${SMS_FROM:MEDITRACK}
+  otp:
+    # Codes are only ever delivered by email/SMS - never returned by the API or written to logs.
+    max-attempts: ${OTP_MAX_ATTEMPTS:5}                        # wrong guesses before a code is locked
+    resend-cooldown-seconds: ${OTP_RESEND_COOLDOWN_SECONDS:30} # min. gap between two codes for the same user
+  tokens:
+    email-verify-minutes: ${EMAIL_VERIFY_MINUTES:10}
+    password-reset-minutes: ${PASSWORD_RESET_MINUTES:30}
+    login-otp-minutes: ${LOGIN_OTP_MINUTES:5}
+  seed:
+    # Real inbox for the demo accounts, e.g. you@gmail.com -> you+superadmin@gmail.com (same inbox).
+    email-base: ${SEED_EMAIL_BASE:}
+    # Recovery switch: true = reset demo passwords to the documented defaults on next boot.
+    reset-demo-passwords: ${SEED_RESET_DEMO_PASSWORDS:false}
+  upload:
+    dir: ${UPLOAD_DIR:uploads/reports}
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:5173,http://localhost:5500,http://localhost:8000,http://127.0.0.1:5500,http://127.0.0.1:8000}
+  rate-limit:
+    login:
+      max-attempts: ${LOGIN_RATE_LIMIT_MAX:5}
+      window-seconds: ${LOGIN_RATE_LIMIT_WINDOW:60}
+
+logging:
+  level:
+    com.meditrack: DEBUG
+    org.hibernate.SQL: ${SQL_LOG:INFO}
